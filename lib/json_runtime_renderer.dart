@@ -19,6 +19,8 @@ class JsonWidgetFactory {
     String? Function(String key)? jsonResolver,
     String? Function(String key)? textResolver,
     bool Function(String key)? boolResolver,
+    Map<String, ValueChanged<String>>? nodeSelectedRegistry,
+    String? Function(String key)? selectedResolver,
     Widget Function(String json)? previewBuilder,
     Widget Function(String json)? dartPreviewBuilder,
   })  : _iconRegistry = iconRegistry ?? _defaultIconRegistry,
@@ -30,6 +32,8 @@ class JsonWidgetFactory {
         _jsonResolver = jsonResolver,
         _textResolver = textResolver,
         _boolResolver = boolResolver,
+        _nodeSelectedRegistry = nodeSelectedRegistry ?? const {},
+        _selectedResolver = selectedResolver,
         _previewBuilder = previewBuilder,
         _dartPreviewBuilder = dartPreviewBuilder;
 
@@ -43,6 +47,8 @@ class JsonWidgetFactory {
   final String? Function(String key)? _jsonResolver;
   final String? Function(String key)? _textResolver;
   final bool Function(String key)? _boolResolver;
+  final Map<String, ValueChanged<String>> _nodeSelectedRegistry;
+  final String? Function(String key)? _selectedResolver;
   final Widget Function(String json)? _previewBuilder;
   final Widget Function(String json)? _dartPreviewBuilder;
   final Map<String, Map<String, dynamic>> _parseCache = {};
@@ -109,6 +115,12 @@ class JsonWidgetFactory {
         return _buildPadding(props, child);
       case 'SizedBox':
         return _buildSizedBox(props, child);
+      case 'DefaultTabController':
+        return _buildDefaultTabController(props, child, children);
+      case 'TabBar':
+        return _buildTabBar(props);
+      case 'TabBarView':
+        return _buildTabBarView(children);
       case 'Card':
         return _buildCard(props, child);
       case 'Image':
@@ -127,6 +139,10 @@ class JsonWidgetFactory {
         return _buildPreviewPane(props);
       case 'StatusText':
         return _buildStatusText(props);
+      case 'JsonTreeView':
+        return _buildJsonTreeView(props);
+      case 'JsonComponentsView':
+        return _buildJsonComponentsView(props);
       default:
         return _buildGeneric(type ?? 'Container', props, child, children);
     }
@@ -385,6 +401,39 @@ class JsonWidgetFactory {
     );
   }
 
+  Widget _buildDefaultTabController(Map<String, dynamic> props, dynamic child, List children) {
+    final length = props['length'] is int ? props['length'] as int : (children.isNotEmpty ? children.length : 0);
+    final body = child is Map<String, dynamic>
+        ? buildFromNode(child)
+        : (children.isNotEmpty
+            ? Column(children: [for (final c in children) if (c is Map<String, dynamic>) buildFromNode(c)])
+            : const SizedBox.shrink());
+    return DefaultTabController(length: length, child: body);
+  }
+
+  Widget _buildTabBar(Map<String, dynamic> props) {
+    final tabs = (props['tabs'] as List?) ?? const [];
+    return TabBar(
+      isScrollable: props['isScrollable'] == true,
+      tabs: [
+        for (final t in tabs)
+          if (t is Map<String, dynamic>)
+            buildFromNode(t)
+          else
+            Tab(text: t.toString()),
+      ],
+    );
+  }
+
+  Widget _buildTabBarView(List children) {
+    return TabBarView(
+      children: [
+        for (final c in children)
+          if (c is Map<String, dynamic>) buildFromNode(c) else const SizedBox.shrink(),
+      ],
+    );
+  }
+
   Widget _buildCard(Map<String, dynamic> props, dynamic child) {
     return Card(
       elevation: props['elevation'] is num ? (props['elevation'] as num).toDouble() : null,
@@ -539,6 +588,83 @@ class JsonWidgetFactory {
         color: _colorFrom(props['color']) ?? Colors.red,
         fontSize: props['fontSize'] is num ? (props['fontSize'] as num).toDouble() : 12.0,
       ),
+    );
+  }
+
+  Widget _buildJsonTreeView(Map<String, dynamic> props) {
+    final sourceKey = props['sourceKey']?.toString() ?? '';
+    final selectKey = props['selectKey']?.toString() ?? '';
+    final selectedPath = _selectedResolver?.call(selectKey) ?? '';
+    final json = _jsonResolver?.call(sourceKey) ?? '';
+
+    List<_TreeNode> nodes = const [];
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is Map<String, dynamic>) {
+        nodes = _flattenTree(decoded, path: 'root', depth: 0);
+      }
+    } catch (_) {}
+
+    return ListView(
+      children: [
+        for (final n in nodes)
+          InkWell(
+            onTap: () {
+              final cb = _nodeSelectedRegistry[selectKey];
+              if (cb != null) cb(n.path);
+            },
+            child: Container(
+              color: n.path == selectedPath ? Colors.blue.withOpacity(0.12) : null,
+              padding: EdgeInsets.only(left: 8.0 + n.depth * 12.0, top: 6, bottom: 6, right: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${n.type}  ${n.objectId ?? ''}'.trim(),
+                      style: TextStyle(
+                        fontWeight: n.path == selectedPath ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                  if (n.hasChildren) const Icon(Icons.chevron_right, size: 16),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildJsonComponentsView(Map<String, dynamic> props) {
+    final sourceKey = props['sourceKey']?.toString() ?? '';
+    final onAddKey = props['onAddKey']?.toString() ?? '';
+    final json = _jsonResolver?.call(sourceKey) ?? '';
+
+    List<Map<String, dynamic>> components = const [];
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is Map<String, dynamic> && decoded['components'] is List) {
+        components = [
+          for (final c in decoded['components'] as List)
+            if (c is Map<String, dynamic>) c,
+        ];
+      }
+    } catch (_) {}
+
+    return ListView(
+      children: [
+        for (final c in components)
+          InkWell(
+            onTap: () {
+              final cb = _stringChangedRegistry[onAddKey];
+              if (cb != null) cb(jsonEncode(c));
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+              child: Text(c['type']?.toString() ?? 'Component'),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -815,4 +941,47 @@ class JsonBenchmarkScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+
+class _TreeNode {
+  _TreeNode({
+    required this.path,
+    required this.type,
+    required this.depth,
+    this.objectId,
+    this.hasChildren = false,
+  });
+
+  final String path;
+  final String type;
+  final int depth;
+  final String? objectId;
+  final bool hasChildren;
+}
+
+List<_TreeNode> _flattenTree(Map<String, dynamic> node, {required String path, required int depth}) {
+  final type = node['type']?.toString() ?? 'Unknown';
+  final objectId = node['objectId']?.toString() ?? node['id']?.toString();
+  final children = (node['children'] is List) ? (node['children'] as List) : const [];
+  final child = node['child'] is Map<String, dynamic> ? node['child'] as Map<String, dynamic> : null;
+  final hasChildren = (children.isNotEmpty || child != null);
+
+  final list = <_TreeNode>[
+    _TreeNode(path: path, type: type, depth: depth, objectId: objectId, hasChildren: hasChildren),
+  ];
+
+  if (child != null) {
+    list.addAll(_flattenTree(child, path: '$path.child', depth: depth + 1));
+  }
+
+  var index = 0;
+  for (final c in children) {
+    if (c is Map<String, dynamic>) {
+      list.addAll(_flattenTree(c, path: '$path.children[$index]', depth: depth + 1));
+    }
+    index++;
+  }
+
+  return list;
 }

@@ -1,120 +1,115 @@
 {
   "type": "Scaffold",
   "props": {
-    "appBar": {"type": "AppBar", "props": {"title": "UiJsonGen"}}
+    "appBar": {"type": "AppBar", "props": {"title": "UiJsonGen Studio"}}
   },
   "child": {
     "type": "Padding",
     "props": {"padding": "EdgeInsets.all(12)"},
     "child": {
-      "type": "Column",
+      "type": "Row",
       "children": [
-        {"type": "Text", "props": {"text": "Edit JSON and preview or export Dart."}},
-        {"type": "SizedBox", "props": {"height": 12}},
         {
           "type": "Expanded",
+          "props": {"flex": 3},
           "child": {
-            "type": "Row",
-            "children": [
-              {
-                "type": "Expanded",
+            "type": "Card",
+            "child": {
+              "type": "Padding",
+              "props": {"padding": "EdgeInsets.all(12)"},
+              "child": {
+                "type": "DefaultTabController",
+                "props": {"length": 2},
                 "child": {
-                  "type": "Card",
-                  "child": {
-                    "type": "Padding",
-                    "props": {"padding": "EdgeInsets.all(12)"},
-                    "child": {
-                      "type": "Column",
-                      "children": [
-                        {"type": "Text", "props": {"text": "JSON"}},
-                        {"type": "SizedBox", "props": {"height": 8}},
-                        {
-                          "type": "Expanded",
-                          "child": {
+                  "type": "Column",
+                  "children": [
+                    {"type": "TabBar", "props": {"tabs": ["Tree", "Components"]}},
+                    {"type": "SizedBox", "props": {"height": 8}},
+                    {
+                      "type": "Expanded",
+                      "child": {
+                        "type": "TabBarView",
+                        "children": [
+                          {"type": "JsonTreeView", "props": {"sourceKey": "target", "selectKey": "selectedNode"}},
+                          {"type": "JsonComponentsView", "props": {"sourceKey": "components", "onAddKey": "addComponent"}}
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {"type": "SizedBox", "props": {"width": 12}},
+        {
+          "type": "Expanded",
+          "props": {"flex": 5},
+          "child": {
+            "type": "Card",
+            "child": {
+              "type": "Padding",
+              "props": {"padding": "EdgeInsets.all(12)"},
+              "child": {
+                "type": "DefaultTabController",
+                "props": {"length": 2},
+                "child": {
+                  "type": "Column",
+                  "children": [
+                    {"type": "TabBar", "props": {"tabs": ["Source", "Preview"]}},
+                    {"type": "SizedBox", "props": {"height": 8}},
+                    {
+                      "type": "Expanded",
+                      "child": {
+                        "type": "TabBarView",
+                        "children": [
+                          {
                             "type": "JsonEditor",
                             "props": {
                               "controllerKey": "target",
-                              "minLines": 12,
-                              "maxLines": 30,
+                              "minLines": 18,
+                              "maxLines": 40,
                               "onChanged": "updateTarget"
                             }
-                          }
-                        },
-                        {"type": "SizedBox", "props": {"height": 6}},
-                        {"type": "StatusText", "props": {"textKey": "errorText", "color": "red", "fontSize": 12}},
-                        {"type": "SizedBox", "props": {"height": 8}},
-                        {
-                          "type": "Row",
-                          "children": [
-                            {"type": "Button", "props": {"text": "Master", "onPressed": "loadMaster"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Form", "onPressed": "loadForm"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Format", "onPressed": "formatJson"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Clear", "onPressed": "clearJson"}}
-                          ]
-                        },
-                        {"type": "SizedBox", "props": {"height": 12}},
-                        {"type": "Text", "props": {"text": "Palette"}},
-                        {"type": "SizedBox", "props": {"height": 6}},
-                        {
-                          "type": "Row",
-                          "children": [
-                            {"type": "Button", "props": {"text": "Text", "onPressed": "addText"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Button", "onPressed": "addButton"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Row", "onPressed": "addRow"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Column", "onPressed": "addColumn"}}
-                          ]
-                        },
-                        {"type": "SizedBox", "props": {"height": 8}},
-                        {
-                          "type": "Row",
-                          "children": [
-                            {"type": "Button", "props": {"text": "Card", "onPressed": "addCard"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "ListView", "onPressed": "addList"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "TextField", "onPressed": "addTextField"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Switch", "onPressed": "addSwitch"}}
-                          ]
-                        }
-                      ]
-                    }
-                  }
-                }
-              },
-              {"type": "SizedBox", "props": {"width": 12}},
-              {
-                "type": "Expanded",
-                "child": {
-                  "type": "Card",
-                  "child": {
-                    "type": "Padding",
-                    "props": {"padding": "EdgeInsets.all(12)"},
-                    "child": {
-                      "type": "Column",
-                      "children": [
-                        {
-                          "type": "Row",
-                          "children": [
-                            {"type": "Button", "props": {"text": "Preview", "onPressed": "modePreview"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Dart", "onPressed": "modeDart"}}
-                          ]
-                        },
-                        {"type": "SizedBox", "props": {"height": 8}},
-                        {"type": "Expanded", "child": {"type": "PreviewPane", "props": {"sourceKey": "target", "modeKey": "previewMode"}}}
-                      ]
-                    }
-                  }
+                          },
+                          {"type": "PreviewPane", "props": {"sourceKey": "target", "modeKey": "previewMode"}}
+                        ]
+                      }
+                    },
+                    {"type": "SizedBox", "props": {"height": 8}},
+                    {"type": "StatusText", "props": {"textKey": "errorText", "color": "red", "fontSize": 12}}
+                  ]
                 }
               }
-            ]
+            }
+          }
+        },
+        {"type": "SizedBox", "props": {"width": 12}},
+        {
+          "type": "Expanded",
+          "props": {"flex": 3},
+          "child": {
+            "type": "Card",
+            "child": {
+              "type": "Padding",
+              "props": {"padding": "EdgeInsets.all(12)"},
+              "child": {
+                "type": "Column",
+                "children": [
+                  {"type": "Text", "props": {"text": "Properties"}},
+                  {"type": "SizedBox", "props": {"height": 6}},
+                  {"type": "StatusText", "props": {"textKey": "selectedPath", "color": "grey", "fontSize": 11}},
+                  {"type": "SizedBox", "props": {"height": 8}},
+                  {"type": "TextFormField", "props": {"labelText": "type", "controllerKey": "propType"}},
+                  {"type": "TextFormField", "props": {"labelText": "objectId", "controllerKey": "propObjectId"}},
+                  {"type": "TextFormField", "props": {"labelText": "text", "controllerKey": "propText"}},
+                  {"type": "TextFormField", "props": {"labelText": "color", "controllerKey": "propColor"}},
+                  {"type": "TextFormField", "props": {"labelText": "padding", "controllerKey": "propPadding"}},
+                  {"type": "SizedBox", "props": {"height": 12}},
+                  {"type": "Button", "props": {"text": "Apply", "onPressed": "applyProps"}}
+                ]
+              }
+            }
           }
         }
       ]

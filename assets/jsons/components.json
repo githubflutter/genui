@@ -1,0 +1,10 @@
+{
+  "components": [
+    {"type": "Text", "props": {"text": "Hello"}},
+    {"type": "Button", "props": {"text": "Tap", "onPressed": "noop"}},
+    {"type": "Row", "children": []},
+    {"type": "Column", "children": []},
+    {"type": "Container", "child": {"type": "Text", "props": {"text": "Box"}}},
+    {"type": "ListView", "children": []}
+  ]
+}
