@@ -1,135 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'json_runtime_renderer.dart';
 import 'json_to_flutter_emitter.dart';
-
-const String uiJson = r'''
-{
-  "type": "Scaffold",
-  "props": {
-    "appBar": {"type": "AppBar", "props": {"title": "UiJsonGen"}}
-  },
-  "child": {
-    "type": "Padding",
-    "props": {"padding": "EdgeInsets.all(12)"},
-    "child": {
-      "type": "Column",
-      "children": [
-        {"type": "Text", "props": {"text": "Edit JSON and preview or export Dart."}},
-        {"type": "SizedBox", "props": {"height": 12}},
-        {
-          "type": "Expanded",
-          "child": {
-            "type": "Row",
-            "children": [
-              {
-                "type": "Expanded",
-                "child": {
-                  "type": "Card",
-                  "child": {
-                    "type": "Padding",
-                    "props": {"padding": "EdgeInsets.all(12)"},
-                    "child": {
-                      "type": "Column",
-                      "children": [
-                        {"type": "Text", "props": {"text": "JSON"}},
-                        {"type": "SizedBox", "props": {"height": 8}},
-                        {
-                          "type": "Expanded",
-                          "child": {
-                            "type": "JsonEditor",
-                            "props": {
-                              "controllerKey": "target",
-                              "minLines": 12,
-                              "maxLines": 30,
-                              "onChanged": "updateTarget"
-                            }
-                          }
-                        },
-                        {"type": "SizedBox", "props": {"height": 6}},
-                        {"type": "StatusText", "props": {"textKey": "errorText", "color": "red", "fontSize": 12}},
-                        {"type": "SizedBox", "props": {"height": 8}},
-                        {
-                          "type": "Row",
-                          "children": [
-                            {"type": "Button", "props": {"text": "Master", "onPressed": "loadMaster"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Form", "onPressed": "loadForm"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Format", "onPressed": "formatJson"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Clear", "onPressed": "clearJson"}}
-                          ]
-                        },
-                        {"type": "SizedBox", "props": {"height": 12}},
-                        {"type": "Text", "props": {"text": "Palette"}},
-                        {"type": "SizedBox", "props": {"height": 6}},
-                        {
-                          "type": "Row",
-                          "children": [
-                            {"type": "Button", "props": {"text": "Text", "onPressed": "addText"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Button", "onPressed": "addButton"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Row", "onPressed": "addRow"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Column", "onPressed": "addColumn"}}
-                          ]
-                        },
-                        {"type": "SizedBox", "props": {"height": 8}},
-                        {
-                          "type": "Row",
-                          "children": [
-                            {"type": "Button", "props": {"text": "Card", "onPressed": "addCard"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "ListView", "onPressed": "addList"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "TextField", "onPressed": "addTextField"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Switch", "onPressed": "addSwitch"}}
-                          ]
-                        }
-                      ]
-                    }
-                  }
-                }
-              },
-              {"type": "SizedBox", "props": {"width": 12}},
-              {
-                "type": "Expanded",
-                "child": {
-                  "type": "Card",
-                  "child": {
-                    "type": "Padding",
-                    "props": {"padding": "EdgeInsets.all(12)"},
-                    "child": {
-                      "type": "Column",
-                      "children": [
-                        {
-                          "type": "Row",
-                          "children": [
-                            {"type": "Button", "props": {"text": "Preview", "onPressed": "modePreview"}},
-                            {"type": "SizedBox", "props": {"width": 8}},
-                            {"type": "Button", "props": {"text": "Dart", "onPressed": "modeDart"}}
-                          ]
-                        },
-                        {"type": "SizedBox", "props": {"height": 8}},
-                        {"type": "Expanded", "child": {"type": "PreviewPane", "props": {"sourceKey": "target", "modeKey": "previewMode"}}}
-                      ]
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        }
-      ]
-    }
-  }
-}
-''';
 
 const String masterDetailJson = r'''
 {
@@ -264,13 +139,113 @@ class UiJsonGenApp extends StatelessWidget {
     return MaterialApp(
       title: 'UiJsonGen',
       theme: ThemeData(useMaterial3: true),
-      home: const UiJsonGenScreen(),
+      home: const StartupScreen(),
     );
   }
 }
 
+class StartupScreen extends StatefulWidget {
+  const StartupScreen({super.key});
+
+  @override
+  State<StartupScreen> createState() => _StartupScreenState();
+}
+
+class _StartupScreenState extends State<StartupScreen> {
+  bool _loading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('GenUI')),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Start', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loading ? null : () => _openStudio(),
+                child: const Text('GenUiStudio'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: _loading ? null : _chooseJson,
+                child: const Text('Choose Json'),
+              ),
+              if (_loading) ...[
+                const SizedBox(height: 16),
+                const CircularProgressIndicator(),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openStudio({String? initialTarget}) async {
+    setState(() => _loading = true);
+    final uiJson = await rootBundle.loadString('assets/jsons/genuistudio.json');
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => UiJsonGenScreen(
+          uiJson: uiJson,
+          initialTarget: initialTarget ?? masterDetailJson,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _chooseJson() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Paste JSON'),
+          content: SizedBox(
+            width: 420,
+            child: TextField(
+              controller: controller,
+              minLines: 6,
+              maxLines: 12,
+              decoration: const InputDecoration(
+                hintText: '{\n  "type": "Container"\n}',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(controller.text.trim()),
+              child: const Text('Load'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result != null && result.isNotEmpty) {
+      await _openStudio(initialTarget: result);
+    }
+  }
+}
+
 class UiJsonGenScreen extends StatefulWidget {
-  const UiJsonGenScreen({super.key});
+  const UiJsonGenScreen({super.key, required this.uiJson, required this.initialTarget});
+
+  final String uiJson;
+  final String initialTarget;
 
   @override
   State<UiJsonGenScreen> createState() => _UiJsonGenScreenState();
@@ -287,7 +262,7 @@ class _UiJsonGenScreenState extends State<UiJsonGenScreen> {
   @override
   void initState() {
     super.initState();
-    _targetController = TextEditingController(text: masterDetailJson);
+    _targetController = TextEditingController(text: widget.initialTarget);
 
     _previewFactory = JsonWidgetFactory(
       actionRegistry: {
@@ -340,7 +315,7 @@ class _UiJsonGenScreenState extends State<UiJsonGenScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return _uiFactory.buildFromJson(uiJson);
+    return _uiFactory.buildFromJson(widget.uiJson);
   }
 
   Widget _buildPreview(String json) {
